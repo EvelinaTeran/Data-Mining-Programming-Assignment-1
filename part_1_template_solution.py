@@ -15,7 +15,7 @@ from sklearn.model_selection import (
 )
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import GridSearchCV
 
 from typing import Any
@@ -96,12 +96,20 @@ class Section1:
 
         # Enter your code and fill the `answer` dictionary
 
-        answer["length_Xtrain"] = None  # Number of samples
-        answer["length_Xtest"] = None
-        answer["length_ytrain"] = None
-        answer["length_ytest"] = None
-        answer["max_Xtrain"] = None
-        answer["max_Xtest"] = None
+        answer["length_Xtrain"] = len(Xtrain)  # Number of samples
+        answer["length_Xtest"] = len(Xtest)
+        answer["length_ytrain"] = len(ytrain)
+        answer["length_ytest"] = len(ytest)
+        answer["max_Xtrain"] = Xtrain.max()
+        answer["max_Xtest"] = Xtest.max()
+        
+        print("Length of Xtrain:", answer["length_Xtrain"])
+        print("Length of Xtest:", answer["length_Xtest"])
+        print("Length of ytrain:", answer["length_ytrain"])
+        print("Length of ytest:", answer["length_ytest"])
+        print("Maximum value of Xtrain:", answer["max_Xtrain"])
+        print("Maximum value of Xtest:", answer["max_Xtest"])
+        
         return answer, Xtrain, ytrain, Xtest, ytest
 
     """
@@ -119,13 +127,31 @@ class Section1:
         y: NDArray[np.int32],
     ):
         # Enter your code and fill the `answer` dictionary
-
+        # Create a Decision Tree Classifier
+        clf = DecisionTreeClassifier(random_state=self.seed)
+        
+        # Create a k-fold cross validator with 5 splits
+        kf = KFold(n_splits=5, random_state=self.seed, shuffle=True)
+        
+        # Train the classifier using k-fold cross-validation
+        scores = u.train_simple_classifier_with_cv(X, y, clf, kf)
+        
+        # Print the mean and standard deviation of accuracy scores
+        print("Mean accuracy scores:", scores['test_score'].mean())
+        print("Standard deviation of accuracy scores:", scores['test_score'].std())
+        
+        # Fill the answer dictionary
         answer = {}
-        answer["clf"] = None  # the estimator (classifier instance)
-        answer["cv"] = None  # the cross validator instance
+        answer["clf"] = clf  # the estimator (classifier instance)
+        answer["cv"] = kf  # the cross validator instance
         # the dictionary with the scores  (a dictionary with
         # keys: 'mean_fit_time', 'std_fit_time', 'mean_accuracy', 'std_accuracy'.
-        answer["scores"] = None
+        answer["scores"] = {
+            'mean_fit_time': scores['fit_time'].mean(),
+            'std_fit_time': scores['fit_time'].std(),
+            'mean_accuracy': scores['test_score'].mean(),
+            'std_accuracy': scores['test_score'].std()
+            }
         return answer
 
     # ---------------------------------------------------------
@@ -140,14 +166,46 @@ class Section1:
         y: NDArray[np.int32],
     ):
         # Enter your code and fill the `answer` dictionary
+        # Create a Decision Tree Classifier
+        clf = DecisionTreeClassifier(random_state = self.seed)
+        
+        # Create a Shuffle-Split cross validator with 5 splits
+        ss = ShuffleSplit(n_splits=5, random_state=self.seed, test_size=self.frac_train)
 
+        # Train the classifier using shuffle-split cross validation
+        scores = u.train_simple_classifier_with_cv(X, y, clf, ss)
+        
+        # Print mean and standard devaition of accuracy scores
+        print("Mean accuracy scores:", scores['mean_accuracy'])
+        print("Standard deviation of accuracy scores:", scores['std_accuracy'])
+        
+        # Explain pros and cons
+        explain_kfold_vs_shuffle_split = """
+        Pros of k-fold cross validation:
+            - maximazed data usage since each data point is used for training and testing
+            - provides a better estimate of the model's perfromance
+        Cons of k-fold cross validation:
+            - computationally expensive
+            - make not be suitable for certain types of data (for example time series data)
+        Pros of shuffle-split cross validation:
+            - more flexiablity for number of splits and test size
+            - useful for really large datasets
+        Cons of shuffle-split cross validation:
+            - might not capture the data distribution as well as k-fold cross validation
+            - each point is not necessarily used for training and testing 
+        """
         # Answer: same structure as partC, except for the key 'explain_kfold_vs_shuffle_split'
 
         answer = {}
-        answer["clf"] = None
-        answer["cv"] = None
-        answer["scores"] = None
-        answer["explain_kfold_vs_shuffle_split"] = None
+        answer["clf"] = clf
+        answer["cv"] = ss
+        answer["scores"] = {
+            'mean_fit_time': scores['fit_time'].mean(),
+            'std_fit_time': scores['fit_time'].std(),
+            'mean_accuracy': scores['test_score'].mean(),
+            'std_accuracy': scores['test_score'].std()
+            }
+        answer["explain_kfold_vs_shuffle_split"] = explain_kfold_vs_shuffle_split
         return answer
 
     # ----------------------------------------------------------------------
@@ -165,11 +223,34 @@ class Section1:
         # Answer: built on the structure of partC
         # `answer` is a dictionary with keys set to each split, in this case: 2, 5, 8, 16
         # Therefore, `answer[k]` is a dictionary with keys: 'scores', 'cv', 'clf`
-
+        # Different values of k
+        k_values = [2, 5, 8, 16]
+        
         answer = {}
 
         # Enter your code, construct the `answer` dictionary, and return it.
-
+        # Loop through each value of k
+        for k in k_values:
+            # Create a Decision Tree classifier
+            clf = DecisionTreeClassifier(random_state=self.seed)
+            
+            # Create a shuffle-split cross validator with k splits
+            ss = ShuffleSplit(n_splits=k, random_state=self.seed, test_size=self.frac_train)
+            
+            # Train the classifier using shuffle-slpt cross validation
+            scores = u.train_simple_classifier_with_cv(X, y, clf, ss)
+            
+            # Store scores and classifier for this k value
+            answer[k] = {
+                "clf": clf,
+                "cv": ss,
+                "scores": {
+                    'mean_fit_time': scores['fit_time'].mean(),
+                    'std_fit_time': scores['fit_time'].std(),
+                    'mean_accuracy': scores['test_score'].mean(),
+                    'std_accuracy': scores['test_score'].std()
+                    }
+                }
         return answer
 
     # ----------------------------------------------------------------------
@@ -193,11 +274,36 @@ class Section1:
         y: NDArray[np.int32],
     ) -> dict[str, Any]:
         """ """
-
         answer = {}
 
         # Enter your code, construct the `answer` dictionary, and return it.
-
+        # Create a cross validator with 5 splits 
+        ss = ShuffleSplit(n_splits=5, random_state=self.seed, test_size=self.frac_train)
+        
+        # Reuse the Decision tree classifier from part D
+        clf_DT = DecisionTreeClassifier(random_state=self.seed)
+        
+        # Create a Random Forest classifier with default parameters
+        clf_RF = RandomForestClassifier(random_state=self.seed)
+        
+        # Train the Decision Tree classifer using shuffle-split cross validation
+        scores_DT = u.train_simple_classifier_with_cv(X, y, clf_DT, ss)
+        
+        # Train the random forest classifier using shuffle split cross validation
+        scores_RF = u.train_simple_classifier_with_cv(X, y, clf_RF, ss)
+        
+        # Comparing results from part D and part F
+        # Determine the model with the highest accuracy on average
+        model_highest_accuracy = "Random Forest" if scores_RF['test_score'].mean() > scores_DT['test_score'].mean() else "Decision Tree"
+        
+        # Determine which model has the lowest variance on average
+        # model_lowest_variance = "Random Forest" if scores_RF['test_score'].std() < scores_DT['test_score'].std() else "Decision Tree"
+        model_lowest_variance = min(scores_RF['test_score'].std(), scores_DT['test_score'].std())
+        
+        # Determine which mdel is faster to train
+        # model_fastest = "Random Forest" if scores_RF['fit_time'].mean() < scores_DT['fit_time'].mean() else "Decision Tree"
+        model_fastest = min(scores_RF['fit_time'].mean(), scores_DT['fit_time'].mean())
+        
         """
          Answer is a dictionary with the following keys: 
             "clf_RF",  # Random Forest class instance
@@ -209,6 +315,23 @@ class Section1:
             "model_lowest_variance" (float)
             "model_fastest" (float)
         """
+        answer["clf_RF"] = clf_RF
+        answer["clf_DT"] = clf_DT
+        answer["cv"] = ss
+        answer["scores_RF"] = {'mean_fit_time': scores_RF['fit_time'].mean(),
+                               'std_fit_time': scores_RF['fit_time'].std(),
+                               'mean_accuracy': scores_RF['test_score'].mean(),
+                               'std_accuracy': scores_RF['test_score'].std()
+                               }
+        answer["scores_DT"] = {'mean_fit_time': scores_DT['fit_time'].mean(),
+                               'std_fit_time': scores_DT['fit_time'].std(),
+                               'mean_accuracy': scores_DT['test_score'].mean(),
+                               'std_accuracy': scores_DT['test_score'].std()
+                               }
+        answer["model_highest_accuracy"] = model_highest_accuracy
+        answer["model_lowest_variance"] = model_lowest_variance
+        answer["model_faster"] = model_fastest
+        
 
         return answer
 
@@ -268,6 +391,50 @@ class Section1:
         answer = {}
 
         # Enter your code, construct the `answer` dictionary, and return it.
+        # Create a Random Forest classifier with default parameters
+        clf = RandomForestClassifier(random_state=self.seed)
+        
+        # Define the grid of hyperparameters to search
+        param_grid = {
+            'criterion': ['gini', 'entropy'],
+            'max_depth': [None, 10, 20, 30],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4],
+            'max_features': ['auto', 'sqrt', 'log2']
+            }
+
+        # Create a grid search cross validator
+        grid_search = GridSearchCV(estimator=clf, param_grid=param_grid, cv=5, scoring='accuracy')
+        
+        # Perform grid search to find the best hyperparameters
+        grid_search.fit(X, y)
+        
+        # get the best estimator with the best hyperparameters
+        best_estimator = grid_search.best_estimator_
+        
+        # Get the mean accuracy score from cross validation
+        mean_accuracy_cv = grid_search.best_score_
+        
+        # Get the confusion matrix and accuracy for the original classifier on full training data
+        y_pred_train_orig = clf.fit(X, y).predict(X)
+        confusion_matrix_train_orig = confusion_matrix(y, y_pred_train_orig)
+        accuracy_orig_full_training = accuracy_score(y, y_pred_train_orig)
+        
+        # Get the confusion matrix and accuracy for the best classifier on full training data
+        y_pred_train_best = best_estimator.predict(X)
+        confusion_matrix_train_best = confusion_matrix(y, y_pred_train_best)
+        accuracy_best_full_training = accuracy_score(y, y_pred_train_best) 
+
+        # Get the confusion matrix and accuracy for the original classifier on test data
+        y_pred_test_orig = clf.fit(X, y).predict(Xtest)
+        confusion_matrix_test_orig = confusion_matrix(ytest, y_pred_test_orig)
+        accuracy_orig_full_testing = accuracy_score(ytest, y_pred_test_orig)
+        
+        # Get the confusion matrix and accuracy for the best classifier on test data
+        y_pred_test_best = best_estimator.predict(Xtest)
+        confusion_matrix_test_best = confusion_matrix(ytest, y_pred_test_best)
+        accuracy_best_full_testing = accuracy_score(ytest, y_pred_test_best)
+
 
         """
            `answer`` is a dictionary with the following keys: 
@@ -296,5 +463,18 @@ class Section1:
             "accuracy_best_full_testing"
                
         """
+        answer["clf"] = clf
+        answer["default_parameters"] = clf.get_params()
+        answer["best_estimator"] = best_estimator
+        answer["grid_search"] = grid_search
+        answer["mean_accuracy_cv"]= mean_accuracy_cv
+        answer["confusion_matrix_train_orig"] = confusion_matrix_train_orig
+        answer["confusion_matrix_train_best"] = confusion_matrix_train_best
+        answer["confusion_matrix_test_orig"] = confusion_matrix_test_orig
+        answer["confusion_matrix_test_best"] = confusion_matrix_test_best
+        answer["accuracy_orig_full_training"] = accuracy_orig_full_training
+        answer["accuracy_best_full_training"] = accuracy_best_full_training
+        answer["accuracy_orig_full_testing"] = accuracy_orig_full_testing
+        answer["accuracy_best_full_testing"] = accuracy_best_full_testing
 
         return answer
